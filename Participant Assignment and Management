@@ -1,0 +1,121 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <unordered_map>
+
+using namespace std;
+
+class Participant {
+public:
+    string name;
+    Participant(const string& name) : name(name) {}
+};
+
+class Event {
+public:
+    string title;
+    vector<Participant> participants;
+
+    Event(const string& title) : title(title) {}
+
+    void addParticipant(const Participant& p) {
+        participants.push_back(p);
+    }
+
+    void displayParticipants() const {
+        if (participants.empty()) {
+            cout << "  No participants yet.\n";
+            return;
+        }
+        for (const auto& p : participants) {
+            cout << "  - " << p.name << "\n";
+        }
+    }
+};
+
+class EventScheduler {
+private:
+    unordered_map<string, Event> events;
+
+public:
+    void createEvent() {
+        cout << "Enter event title: ";
+        string title;
+        getline(cin >> ws, title);
+        if (events.count(title)) {
+            cout << "Event already exists.\n";
+        } else {
+            events[title] = Event(title);
+            cout << "Event '" << title << "' created.\n";
+        }
+    }
+
+    void addParticipantToEvent() {
+        cout << "Enter event title: ";
+        string title;
+        getline(cin >> ws, title);
+        if (!events.count(title)) {
+            cout << "Event not found.\n";
+            return;
+        }
+
+        cout << "Enter participant name: ";
+        string name;
+        getline(cin >> ws, name);
+        events[title].addParticipant(Participant(name));
+        cout << "Participant '" << name << "' added to event '" << title << "'.\n";
+    }
+
+    void viewEventSchedule() {
+        if (events.empty()) {
+            cout << "No events scheduled.\n";
+            return;
+        }
+
+        cout << "\n--- Event Schedule ---\n";
+        for (const auto& pair : events) {
+            cout << "Event: " << pair.first << "\n";
+            pair.second.displayParticipants();
+            cout << endl;
+        }
+    }
+};
+
+void showMenu() {
+    cout << "\n=== Simulated Event Scheduler ===\n";
+    cout << "1. Create Event\n";
+    cout << "2. Add Participant to Event\n";
+    cout << "3. View Event Schedule\n";
+    cout << "4. Exit\n";
+    cout << "Choose an option: ";
+}
+
+int main() {
+    EventScheduler scheduler;
+    int choice;
+
+    while (true) {
+        showMenu();
+        cin >> choice;
+        cin.ignore(); // flush newline
+
+        switch (choice) {
+            case 1:
+                scheduler.createEvent();
+                break;
+            case 2:
+                scheduler.addParticipantToEvent();
+                break;
+            case 3:
+                scheduler.viewEventSchedule();
+                break;
+            case 4:
+                cout << "Exiting...\n";
+                return 0;
+            default:
+                cout << "Invalid option. Try again.\n";
+        }
+    }
+
+    return 0;
+}

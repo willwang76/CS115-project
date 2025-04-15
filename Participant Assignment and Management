@@ -1,121 +1,142 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <unordered_map>
-
-using namespace std;
+#include <algorithm>
 
 class Participant {
 public:
-    string name;
-    Participant(const string& name) : name(name) {}
+    std::string name;
+
+    Participant(const std::string& name) : name(name) {}
 };
 
 class Event {
 public:
-    string title;
-    vector<Participant> participants;
+    std::string title;
+    std::string date;
+    std::vector<Participant> participants;
 
-    Event(const string& title) : title(title) {}
+    Event(const std::string& title, const std::string& date) : title(title), date(date) {}
 
-    void addParticipant(const Participant& p) {
-        participants.push_back(p);
-    }
-
-    void displayParticipants() const {
-        if (participants.empty()) {
-            cout << "  No participants yet.\n";
-            return;
-        }
+    void addParticipant(const std::string& name) {
         for (const auto& p : participants) {
-            cout << "  - " << p.name << "\n";
+            if (p.name == name) {
+                std::cout << "Participant already assigned.\n";
+                return;
+            }
         }
+        participants.emplace_back(name);
+        std::cout << "Participant '" << name << "' added to event '" << title << "'.\n";
     }
-};
 
-class EventScheduler {
-private:
-    unordered_map<string, Event> events;
-
-public:
-    void createEvent() {
-        cout << "Enter event title: ";
-        string title;
-        getline(cin >> ws, title);
-        if (events.count(title)) {
-            cout << "Event already exists.\n";
+    void removeParticipant(const std::string& name) {
+        auto it = std::remove_if(participants.begin(), participants.end(), [&](const Participant& p) {
+            return p.name == name;
+        });
+        if (it != participants.end()) {
+            participants.erase(it, participants.end());
+            std::cout << "Participant '" << name << "' removed.\n";
         } else {
-            events[title] = Event(title);
-            cout << "Event '" << title << "' created.\n";
+            std::cout << "Participant not found.\n";
         }
     }
 
-    void addParticipantToEvent() {
-        cout << "Enter event title: ";
-        string title;
-        getline(cin >> ws, title);
-        if (!events.count(title)) {
-            cout << "Event not found.\n";
-            return;
-        }
-
-        cout << "Enter participant name: ";
-        string name;
-        getline(cin >> ws, name);
-        events[title].addParticipant(Participant(name));
-        cout << "Participant '" << name << "' added to event '" << title << "'.\n";
-    }
-
-    void viewEventSchedule() {
-        if (events.empty()) {
-            cout << "No events scheduled.\n";
-            return;
-        }
-
-        cout << "\n--- Event Schedule ---\n";
-        for (const auto& pair : events) {
-            cout << "Event: " << pair.first << "\n";
-            pair.second.displayParticipants();
-            cout << endl;
+    void listParticipants() const {
+        if (participants.empty()) {
+            std::cout << "No participants assigned.\n";
+        } else {
+            for (const auto& p : participants) {
+                std::cout << "- " << p.name << "\n";
+            }
         }
     }
 };
 
-void showMenu() {
-    cout << "\n=== Simulated Event Scheduler ===\n";
-    cout << "1. Create Event\n";
-    cout << "2. Add Participant to Event\n";
-    cout << "3. View Event Schedule\n";
-    cout << "4. Exit\n";
-    cout << "Choose an option: ";
+std::vector<Event> events;
+
+void createEvent() {
+    std::string title, date;
+    std::cout << "Enter event title: ";
+    std::getline(std::cin, title);
+    std::cout << "Enter event date (YYYY-MM-DD): ";
+    std::getline(std::cin, date);
+    events.emplace_back(title, date);
+    std::cout << "Event '" << title << "' created.\n";
+}
+
+void listEvents() {
+    if (events.empty()) {
+        std::cout << "No events scheduled.\n";
+    } else {
+        for (size_t i = 0; i < events.size(); ++i) {
+            std::cout << i + 1 << ". " << events[i].title << " on " << events[i].date
+                      << " - " << events[i].participants.size() << " participants\n";
+        }
+    }
+}
+
+void manageEvent() {
+    listEvents();
+    std::cout << "Select event number to manage: ";
+    int index;
+    std::cin >> index;
+    std::cin.ignore();
+
+    if (index < 1 || index > events.size()) {
+        std::cout << "Invalid selection.\n";
+        return;
+    }
+
+    Event& event = events[index - 1];
+    while (true) {
+        std::cout << "\nManaging Event: " << event.title << "\n";
+        std::cout << "1. Add Participant\n2. Remove Participant\n3. List Participants\n4. Back to Main Menu\n";
+        std::cout << "Select an option: ";
+        int choice;
+        std::cin >> choice;
+        std::cin.ignore();
+
+        if (choice == 1) {
+            std::string name;
+            std::cout << "Enter participant name: ";
+            std::getline(std::cin, name);
+            event.addParticipant(name);
+        } else if (choice == 2) {
+            std::string name;
+            std::cout << "Enter name to remove: ";
+            std::getline(std::cin, name);
+            event.removeParticipant(name);
+        } else if (choice == 3) {
+            event.listParticipants();
+        } else if (choice == 4) {
+            break;
+        } else {
+            std::cout << "Invalid choice.\n";
+        }
+    }
 }
 
 int main() {
-    EventScheduler scheduler;
-    int choice;
-
     while (true) {
-        showMenu();
-        cin >> choice;
-        cin.ignore(); // flush newline
+        std::cout << "\n=== Simulated Event Scheduling System ===\n";
+        std::cout << "1. Create Event\n2. List Events\n3. Manage Event\n4. Exit\n";
+        std::cout << "Choose an option: ";
+        int choice;
+        std::cin >> choice;
+        std::cin.ignore();
 
-        switch (choice) {
-            case 1:
-                scheduler.createEvent();
-                break;
-            case 2:
-                scheduler.addParticipantToEvent();
-                break;
-            case 3:
-                scheduler.viewEventSchedule();
-                break;
-            case 4:
-                cout << "Exiting...\n";
-                return 0;
-            default:
-                cout << "Invalid option. Try again.\n";
+        if (choice == 1) {
+            createEvent();
+        } else if (choice == 2) {
+            listEvents();
+        } else if (choice == 3) {
+            manageEvent();
+        } else if (choice == 4) {
+            std::cout << "Exiting...\n";
+            break;
+        } else {
+            std::cout << "Invalid choice.\n";
         }
     }
-
     return 0;
 }

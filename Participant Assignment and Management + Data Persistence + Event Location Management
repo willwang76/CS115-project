@@ -1,0 +1,194 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <fstream>
+#include <sstream>
+
+class Participant {
+public:
+    std::string name;
+
+    Participant(const std::string& name) : name(name) {}
+};
+
+class Event {
+public:
+    std::string title;
+    std::string date;
+    std::string location;
+    std::vector<Participant> participants;
+
+    Event(const std::string& title, const std::string& date, const std::string& location)
+        : title(title), date(date), location(location) {}
+
+    void addParticipant(const std::string& name) {
+        for (const auto& p : participants) {
+            if (p.name == name) {
+                std::cout << "Participant already assigned.\n";
+                return;
+            }
+        }
+        participants.emplace_back(name);
+        std::cout << "Participant '" << name << "' added to event '" << title << "'.\n";
+    }
+
+    void removeParticipant(const std::string& name) {
+        auto it = std::remove_if(participants.begin(), participants.end(), [&](const Participant& p) {
+            return p.name == name;
+        });
+        if (it != participants.end()) {
+            participants.erase(it, participants.end());
+            std::cout << "Participant '" << name << "' removed.\n";
+        } else {
+            std::cout << "Participant not found.\n";
+        }
+    }
+
+    void listParticipants() const {
+        if (participants.empty()) {
+            std::cout << "No participants assigned.\n";
+        } else {
+            for (const auto& p : participants) {
+                std::cout << "- " << p.name << "\n";
+            }
+        }
+    }
+};
+
+std::vector<Event> events;
+
+void saveEvents(const std::string& filename) {
+    std::ofstream file(filename);
+    for (const auto& event : events) {
+        file << event.title << "|" << event.date << "|" << event.location << "|";
+        for (size_t i = 0; i < event.participants.size(); ++i) {
+            file << event.participants[i].name;
+            if (i != event.participants.size() - 1)
+                file << ",";
+        }
+        file << "\n";
+    }
+}
+
+void loadEvents(const std::string& filename) {
+    std::ifstream file(filename);
+    std::string line;
+    while (std::getline(file, line)) {
+        std::stringstream ss(line);
+        std::string title, date, location, partList;
+        std::getline(ss, title, '|');
+        std::getline(ss, date, '|');
+        std::getline(ss, location, '|');
+        std::getline(ss, partList);
+
+        Event event(title, date, location);
+        std::stringstream ps(partList);
+        std::string name;
+        while (std::getline(ps, name, ',')) {
+            if (!name.empty())
+                event.participants.emplace_back(name);
+        }
+        events.push_back(event);
+    }
+}
+
+void createEvent() {
+    std::string title, date, location;
+    std::cout << "Enter event title: ";
+    std::getline(std::cin, title);
+    std::cout << "Enter event date (YYYY-MM-DD): ";
+    std::getline(std::cin, date);
+    std::cout << "Enter event location: ";
+    std::getline(std::cin, location);
+    events.emplace_back(title, date, location);
+    std::cout << "Event '" << title << "' created at '" << location << "'.\n";
+}
+
+void listEvents() {
+    if (events.empty()) {
+        std::cout << "No events scheduled.\n";
+    } else {
+        for (size_t i = 0; i < events.size(); ++i) {
+            std::cout << i + 1 << ". " << events[i].title << " on " << events[i].date
+                      << " at " << events[i].location << " - "
+                      << events[i].participants.size() << " participants\n";
+        }
+    }
+}
+
+void manageEvent() {
+    listEvents();
+    std::cout << "Select event number to manage: ";
+    int index;
+    std::cin >> index;
+    std::cin.ignore();
+
+    if (index < 1 || index > events.size()) {
+        std::cout << "Invalid selection.\n";
+        return;
+    }
+
+    Event& event = events[index - 1];
+    while (true) {
+        std::cout << "\nManaging Event: " << event.title << " at " << event.location << "\n";
+        std::cout << "1. Add Participant\n2. Remove Participant\n3. List Participants\n4. Change Location\n5. Back to Main Menu\n";
+        std::cout << "Select an option: ";
+        int choice;
+        std::cin >> choice;
+        std::cin.ignore();
+
+        if (choice == 1) {
+            std::string name;
+            std::cout << "Enter participant name: ";
+            std::getline(std::cin, name);
+            event.addParticipant(name);
+        } else if (choice == 2) {
+            std::string name;
+            std::cout << "Enter name to remove: ";
+            std::getline(std::cin, name);
+            event.removeParticipant(name);
+        } else if (choice == 3) {
+            event.listParticipants();
+        } else if (choice == 4) {
+            std::string newLocation;
+            std::cout << "Enter new location: ";
+            std::getline(std::cin, newLocation);
+            event.location = newLocation;
+            std::cout << "Location updated.\n";
+        } else if (choice == 5) {
+            break;
+        } else {
+            std::cout << "Invalid choice.\n";
+        }
+    }
+}
+
+int main() {
+    const std::string filename = "events.txt";
+    loadEvents(filename);
+
+    while (true) {
+        std::cout << "\n=== Simulated Event Scheduling System ===\n";
+        std::cout << "1. Create Event\n2. List Events\n3. Manage Event\n4. Save and Exit\n";
+        std::cout << "Choose an option: ";
+        int choice;
+        std::cin >> choice;
+        std::cin.ignore();
+
+        if (choice == 1) {
+            createEvent();
+        } else if (choice == 2) {
+            listEvents();
+        } else if (choice == 3) {
+            manageEvent();
+        } else if (choice == 4) {
+            saveEvents(filename);
+            std::cout << "Events saved. Exiting...\n";
+            break;
+        } else {
+            std::cout << "Invalid choice.\n";
+        }
+    }
+    return 0;
+}
